@@ -421,10 +421,59 @@ class GraphbergReader(BaseReader):
         self._pf = None
 
 
+# ---------------------------------------------------------------------------
+# GraphbergDatasetReader -- methodology Track B (dataset planner path)
+# ---------------------------------------------------------------------------
+
+class GraphbergDatasetReader(BaseReader):
+    """Reads the Graphberg edge file via ``pyarrow.dataset.to_table`` for the
+    neighbor-lookup hot path.
+
+    This deliberately violates the v1.1 plan §3.4 "no dataset planner"
+    constraint. Its purpose is to quantify how much of Graphberg's W1/W2 win
+    comes from the layout (footer hints + offset sub-index) versus simply
+    bypassing the PyArrow dataset planner. It is a Track B measurement.
+
+    Files read are exactly the same as :class:`GraphbergReader` -- so any gap
+    between the two readers is attributable to the access path, not to the
+    on-disk format.
+    """
+
+    def __init__(self, data_root: Path):
+        self.data_root = Path(data_root)
+        self._edges_path = self.data_root / "edges.parquet"
+        self._vertices_path = self.data_root / "vertices.parquet"
+        self._dataset: Optional[ds.Dataset] = ds.dataset(
+            str(self._edges_path), format="parquet"
+        )
+
+    def neighbors_of(self, src: int) -> List[int]:
+        if self._dataset is None:
+            raise RuntimeError("GraphbergDatasetReader is closed; reopen first")
+        table = self._dataset.to_table(
+            filter=ds.field("src") == int(src),
+            columns=["dst"],
+        )
+        return table.column("dst").to_pylist()
+
+    def scan_persons_predicate(self) -> int:
+        dataset = ds.dataset(str(self._vertices_path), format="parquet")
+        table = dataset.to_table(
+            filter=(ds.field("birth_year") > 1990)
+            & (ds.field("country") == "C001"),
+            columns=["vid"],
+        )
+        return table.num_rows
+
+    def close(self) -> None:
+        self._dataset = None
+
+
 __all__ = [
     "BaseReader",
     "PlainParquetReader",
     "IcebergReader",
     "GraphArReader",
     "GraphbergReader",
+    "GraphbergDatasetReader",
 ]
