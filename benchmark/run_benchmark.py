@@ -186,38 +186,36 @@ def stage_generate_and_write(skip_existing: bool = True) -> dict:
 # Stage 2: correctness check
 # ---------------------------------------------------------------------------
 
-def _build_ground_truth(knows: pa.Table) -> dict[int, set]:
-    """Build {src_vid: set(dst_vids)} from the in-memory knows table.
+def _ground_truth_lookup(knows: pa.Table):
+    """Return a closure ``truth(vid) -> set[int]`` that does on-demand
+    lookups via np.searchsorted on the sorted-by-src knows table.
 
-    Uses the np.split / searchsorted trick to partition dst by src in a
-    single pass. The knows table is expected sorted by (src, dst); we
-    re-sort defensively in case a caller passes an unsorted table.
+    We deliberately do NOT materialise a full {src: set} dict — at
+    V=5M / E=160M that pure-Python structure peaks well over 16 GB.
     """
     src = knows.column("src").to_numpy(zero_copy_only=False)
     dst = knows.column("dst").to_numpy(zero_copy_only=False)
-
-    # np.split needs src non-decreasing.
     if src.size and not np.all(src[1:] >= src[:-1]):
         order = np.argsort(src, kind="stable")
         src = src[order]
         dst = dst[order]
 
-    if src.size == 0:
-        return {}
+    def truth(vid: int) -> set:
+        lo = int(np.searchsorted(src, vid, side="left"))
+        hi = int(np.searchsorted(src, vid, side="right"))
+        if lo == hi:
+            return set()
+        return set(int(x) for x in dst[lo:hi])
 
-    unique_src = np.unique(src)
-    cuts = np.searchsorted(src, unique_src, side="right")[:-1]
-    groups = np.split(dst, cuts)
-
-    return {int(s): set(int(x) for x in g) for s, g in zip(unique_src, groups)}
+    return truth
 
 
 def stage_correctness_check(persons: pa.Table, knows: pa.Table) -> dict:
     """For 30 random vids, compare each reader's neighbors_of(vid) against
     ground truth from the in-memory knows table. Print PASS/FAIL per system.
     """
-    _log("building ground-truth adjacency from in-memory knows ...")
-    truth = _build_ground_truth(knows)
+    _log("building on-demand ground-truth adjacency from in-memory knows ...")
+    truth = _ground_truth_lookup(knows)
 
     n_persons = persons.num_rows
     rng = random.Random(SEED + 1)
@@ -241,7 +239,7 @@ def stage_correctness_check(persons: pa.Table, knows: pa.Table) -> dict:
 
         mismatches: list = []
         for vid in sample_vids:
-            expected = truth.get(int(vid), set())
+            expected = truth(int(vid))
             try:
                 actual_iter = reader.neighbors_of(vid)
                 actual = set(int(x) for x in actual_iter)
