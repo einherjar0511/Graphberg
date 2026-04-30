@@ -1,0 +1,85 @@
+{
+  "config": {
+    "vertices": 5000000,
+    "target_mean_degree": 32,
+    "max_degree": 2000,
+    "zipf_alpha": 1.6,
+    "seed": 20260430,
+    "neighbor_iters": 1000,
+    "row_group_targets_mb": [
+      1,
+      4,
+      8,
+      16,
+      128
+    ],
+    "predicate_threshold_src": 2498782
+  },
+  "results": [
+    {
+      "rg_size_mb": 1,
+      "file_bytes": 1073993785,
+      "num_row_groups": 833,
+      "neighbor_p50_us": 11726.855999995678,
+      "neighbor_p99_us": 14812.729000027502,
+      "neighbor_mean_us": 11759.42939700167,
+      "neighbor_iters": 1000,
+      "neighbor_mean_rows": 25.176,
+      "predicate_wall_ms": 914.4941499999959,
+      "predicate_rows": 80238452
+    },
+    {
+      "rg_size_mb": 4,
+      "file_bytes": 910844953,
+      "num_row_groups": 209,
+      "neighbor_p50_us": 15544.057000056455,
+      "neighbor_p99_us": 20082.92799996525,
+      "neighbor_mean_us": 16143.536635001055,
+      "neighbor_iters": 1000,
+      "neighbor_mean_rows": 25.176,
+      "predicate_wall_ms": 962.5709919999963,
+      "predicate_rows": 80238452
+    },
+    {
+      "rg_size_mb": 8,
+      "file_bytes": 881751344,
+      "num_row_groups": 105,
+      "neighbor_p50_us": 26815.791000103673,
+      "neighbor_p99_us": 39692.96200000372,
+      "neighbor_mean_us": 27547.36693199925,
+      "neighbor_iters": 1000,
+      "neighbor_mean_rows": 25.176,
+      "predicate_wall_ms": 1039.433626999994,
+      "predicate_rows": 80238452
+    },
+    {
+      "rg_size_mb": 16,
+      "file_bytes": 869528917,
+      "num_row_groups": 53,
+      "neighbor_p50_us": 52070.38400010333,
+      "neighbor_p99_us": 64776.928999890515,
+      "neighbor_mean_us": 52865.76643600222,
+      "neighbor_iters": 1000,
+      "neighbor_mean_rows": 25.176,
+      "predicate_wall_ms": 1852.5294479999275,
+      "predicate_rows": 80238452
+    },
+    {
+      "rg_size_mb": 128,
+      "file_bytes": 887584341,
+      "num_row_groups": 7,
+      "neighbor_p50_us": 412207.0580000354,
+      "neighbor_p99_us": 542102.3190000369,
+      "neighbor_mean_us": 402254.0794299996,
+      "neighbor_iters": 1000,
+      "neighbor_mean_rows": 25.176,
+      "predicate_wall_ms": 1916.4059870001893,
+      "predicate_rows": 80238452
+    }
+  ],
+  "decision": {
+    "neighbor_speedup_4_or_8_vs_128": 26.51862753710555,
+    "predicate_slowdown_best_small_vs_128": 0.5022792657346782,
+    "verdict": "PASS"
+  }
+}
